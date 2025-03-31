@@ -1,19 +1,36 @@
 # Material Analysis Tool
 
-A GUI application for analyzing material properties, grain structures, and simulating hot and cold rolling processes.
+## Overview
+A sophisticated GUI application for materials scientists and engineers to analyze crystallographic properties, grain structures, and simulate microstructural evolution through hot and cold rolling processes. This tool provides comprehensive visualization and analysis capabilities for understanding material behavior at the microstructural level.
 
-## Features
+## Key Features
 
-- Material property analysis from input data
-- Kernel Average Misorientation (KAM) plotting
-- Energy distribution visualization
-- Misorientation analysis
-- Monte Carlo simulation for grain evolution
-- Support for both hot-rolled and cold-rolled materials
+### Analysis Capabilities
+- **Kernel Average Misorientation (KAM)**: Visualize local misorientation to identify strain concentrations
+- **Energy Distribution**: Analyze stored energy patterns across material samples
+- **Misorientation Analysis**: Quantify grain boundary characteristics and distributions
+- **Image Quality Mapping**: Assess diffraction pattern quality for microstructural features
+- **Grain Size Calculation**: Automatic measurement of grain dimensions and distribution
+
+### Simulation Tools
+- **Monte Carlo Simulation**: Model grain evolution and recrystallization processes
+- **Hot-Rolled Material Simulation**: Specialized algorithms for high-temperature deformation
+- **Cold-Rolled Material Simulation**: Simulate strain hardening and recovery mechanisms
+
+### Visualization
+- **Interactive Plots**: Multiple visualization options with customizable parameters
+- **Adjustable Color Palettes**: Choose from various scientific colormaps (plasma, inferno, magma, viridis)
+- **Contour Mapping**: Visualize gradients across material properties
+- **Export Capabilities**: Save high-resolution images in multiple formats (JPG, TIFF)
 
 ## Installation
 
-1. Clone this repository
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/material-analysis-tool.git
+   cd material-analysis-tool
+   ```
+
 2. Install dependencies:
    ```
    pip install -r requirements.txt
@@ -21,93 +38,48 @@ A GUI application for analyzing material properties, grain structures, and simul
 
 ## Usage
 
-Run the application:
+### Starting the Application
 ```
 python src/gui.py
 ```
 
-### Input Data
+### Workflow
+1. **Configure Parameters**:
+   - Set basic parameters (tolerance angle, grain boundary energy)
+   - Adjust advanced settings (temperature, iteration steps)
+   - Customize visualization options
 
-The application accepts CSV files with the following structure:
-- [Describe your input data format]
+2. **Import Data**:
+   - Select input CSV files containing orientation data
+   - Supported format: [x, y, phi1, phi, phi2, IQ] coordinates
 
-### Processing Options
+3. **Process Data**:
+   - Choose between hot-rolled or cold-rolled processing algorithms
+   - Monitor progress through the GUI interface
 
-- **Hot-Rolled Processing**: Simulates and analyzes hot-rolled materials
-- **Cold-Rolled Processing**: Simulates and analyzes cold-rolled materials
+4. **Analyze Results**:
+   - Navigate between visualization tabs to examine different material properties
+   - Review statistical data (grain size, count, misorientation)
+   - Run Monte Carlo simulations to predict microstructural evolution
+
+5. **Export Results**:
+   - Save visualizations in preferred format and resolution
+   - Export processed data for further analysis
 
 ## Dependencies
-
 - customtkinter
 - tkinter
-- PIL
+- PIL (Pillow)
 - matplotlib
 - numpy
 - pandas
 
-## License
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-[Choose an appropriate license]
-```
+## Acknowledgements
+This tool was developed as part of a Final Year Project in Materials Science and Engineering.
 
-## Step 4: Create a requirements.txt File
+---
 
-Create a `requirements.txt` file listing all dependencies:
-
-```text:/requirements.txt
-customtkinter
-pillow
-matplotlib
-numpy
-pandas
-```
-
-## Step 5: Organize Your Code Structure
-
-Your code is already well-organized, but consider this structure:
-
-```
-material-analysis-tool/
-├── src/
-│   ├── gui.py
-│   ├── main.py
-│   ├── simulation_hot.py
-│   ├── simulation_cold.py
-│   ├── energy_distribution.py
-│   └── grain_size.py
-├── tests/
-│   └── [test files]
-├── examples/
-│   └── [example data files]
-├── docs/
-│   └── [documentation]
-├── .gitignore
-├── README.md
-├── requirements.txt
-└── LICENSE
-```
-
-## Step 6: Add and Commit Your Files
-
-```bash
-git add .
-git commit -m "Initial commit: Material Analysis Tool"
-```
-
-## Step 7: Create a GitHub Repository
-
-1. Go to [GitHub](https://github.com/) and sign in
-2. Click the "+" icon in the top right and select "New repository"
-3. Name your repository (e.g., "material-analysis-tool")
-4. Add a description
-5. Choose public or private visibility
-6. Do NOT initialize with README, .gitignore, or license (you've already created these)
-7. Click "Create repository"
-
-## Step 8: Link and Push to GitHub
-
-```bash
-git remote add origin https://github.com/yourusername/material-analysis-tool.git
-git branch -M main
-git push -u origin main
-```
+*For questions and support, please open an issue on the GitHub repository.*
