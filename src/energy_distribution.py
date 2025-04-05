@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import os # Import os module for path manipulation
+import os
 from datetime import datetime
+import matplotlib.ticker as ticker
 
-def create_energy_distribution_plot(csv_path: str, output_dir: str) -> str:
+def create_energy_distribution_plot(csv_path: str, output_dir: str, bins: int = 30) -> str:
     """
     Generates and saves a histogram plot of energy distribution from a CSV file.
 
@@ -26,15 +27,34 @@ def create_energy_distribution_plot(csv_path: str, output_dir: str) -> str:
             else:
                 energy_values.append(i[5])
 
-        plt.figure(figsize=(8, 6)) # Create a new figure for the plot
-        plt.hist(energy_values, bins=30, color='skyblue', edgecolor='black')  # Adjust bins as needed
-        plt.xlabel('Misorientation energy (J/m^2)')
+        plt.figure(figsize=(10, 7)) # Slightly larger figure for better readability
+        
+        # Calculate bin edges with more precision
+        min_energy = min(energy_values)
+        max_energy = max(energy_values)
+        bin_width = (max_energy - min_energy) / bins
+        bins = np.arange(min_energy, max_energy + bin_width, bin_width)
+        
+        # Create histogram with more precise bins
+        plt.hist(energy_values, bins=bins, color='skyblue', edgecolor='black')
+        
+        # Format x-axis to show 4 decimal places
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%.4f'))
+        
+        plt.xlabel('Misorientation energy (J/m²)')
         plt.ylabel('Frequency (count)')
         plt.title('Energy Distribution for deformed sample')
-        plt.grid(False)  # Add grid lines
+        plt.grid(True, linestyle='--', alpha=0.7)  # Add subtle grid lines
+        
+        # Rotate x-axis labels for better readability of decimal places
+        plt.xticks(rotation=45)
+        
+        # Adjust layout to make room for rotated labels
+        plt.tight_layout()
 
         # Generate output file path with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # Import datetime if not already imported in this file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"energy_distribution_{timestamp}.png"
         output_path = os.path.join(output_dir, output_filename)
 

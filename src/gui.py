@@ -81,7 +81,6 @@ class MaterialAnalysisGUI:
         ctk.CTkLabel(temp_frame, text="Temperature (K):").pack(side=tk.LEFT, padx=5)
         self.temperature_var = tk.StringVar(value="300")
         ctk.CTkEntry(temp_frame, textvariable=self.temperature_var, width=80).pack(side=tk.LEFT, padx=5)
-        
         iter_frame = ctk.CTkFrame(adv_frame)
         iter_frame.pack(fill=tk.X, pady=2)
         ctk.CTkLabel(iter_frame, text="Iteration Steps:").pack(side=tk.LEFT, padx=5)
@@ -90,6 +89,11 @@ class MaterialAnalysisGUI:
         vis_frame = ctk.CTkFrame(frame)
         vis_frame.pack(fill=tk.X, padx=10, pady=5)
         ctk.CTkLabel(vis_frame, text="Visualization Parameters", font=("Arial", 12, "bold")).pack(pady=5)
+        bins_frame = ctk.CTkFrame(vis_frame)
+        bins_frame.pack(fill=tk.X, pady=2)
+        ctk.CTkLabel(bins_frame, text="Energy Dist. Bins:").pack(side=tk.LEFT, padx=5)
+        self.bins_var = tk.StringVar(value="30")
+        ctk.CTkEntry(bins_frame, textvariable=self.bins_var, width=80).pack(side=tk.LEFT, padx=5)
         palette_frame = ctk.CTkFrame(vis_frame)
         palette_frame.pack(fill=tk.X, pady=2)
         ctk.CTkLabel(palette_frame, text="Color Palette:").pack(side=tk.LEFT, padx=5)
@@ -288,7 +292,11 @@ class MaterialAnalysisGUI:
             for plot_title, output_key in plot_data_mapping:
                 if output_key in output_files:
                     plot_output_data[plot_title] = {'data': output_files[output_key]}
-            energy_dist_plot_path = create_energy_distribution_plot(output_files['csv'], GrainAnalyzer(params).output_dir)
+            energy_dist_plot_path = create_energy_distribution_plot(
+                output_files['csv'], 
+                GrainAnalyzer(params).output_dir,
+                bins=int(self.bins_var.get())
+            )
             plot_output_data['Energy Distribution'] = {'data': energy_dist_plot_path}
             self.root.after(0, self.update_gui_plots, plot_output_data)
             self.output_files_main_analysis = output_files
@@ -297,6 +305,9 @@ class MaterialAnalysisGUI:
             elif process_type == "cold":
                 self.root.after(0, self.initialize_cold_simulation)
             self.root.after(0, self.finish_processing)
+        except ValueError:
+            self.root.after(0, self.show_error, "Invalid bin count. Using default (30).")
+            energy_dist_plot_path = create_energy_distribution_plot(output_files['csv'], GrainAnalyzer(params).output_dir)
         except RuntimeError as re:
             self.root.after(0, self.finish_processing)
             self.root.after(0, self.show_error, str(re))
