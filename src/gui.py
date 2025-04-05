@@ -39,7 +39,7 @@ class MaterialAnalysisGUI:
         self.main_container = ctk.CTkFrame(self.root)
         self.main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.main_container.grid_columnconfigure(0, weight=1, minsize=300)  # Setup section
-        self.main_container.grid_columnconfigure(1, weight=3, minsize=900)  # Visualization
+        self.main_container.grid_columnconfigure(1, weight=3, minsize=800)  # Visualization
         self.main_container.grid_columnconfigure(2, weight=1, minsize=300)  # Analysis
         self.main_container.grid_rowconfigure(0, weight=1)
         self.setup_section = self.create_setup_section()
@@ -60,7 +60,7 @@ class MaterialAnalysisGUI:
         ctk.CTkLabel(basic_frame, text="Basic Parameters", font=("Arial", 12, "bold")).pack(pady=5)
         tol_frame = ctk.CTkFrame(basic_frame)
         tol_frame.pack(fill=tk.X, pady=2)
-        ctk.CTkLabel(tol_frame, text="Tolerance Angle:").pack(side=tk.LEFT, padx=5)
+        ctk.CTkLabel(tol_frame, text="Tolerance Angle (KAM):").pack(side=tk.LEFT, padx=5)
         self.tolerance_var = tk.StringVar(value="5")
         ctk.CTkEntry(tol_frame, textvariable=self.tolerance_var, width=80).pack(side=tk.LEFT, padx=5)
         gb_frame = ctk.CTkFrame(basic_frame)
@@ -71,11 +71,17 @@ class MaterialAnalysisGUI:
         adv_frame = ctk.CTkFrame(frame)
         adv_frame.pack(fill=tk.X, padx=10, pady=5)
         ctk.CTkLabel(adv_frame, text="Advanced Parameters", font=("Arial", 12, "bold")).pack(pady=5)
+        grains_frame = ctk.CTkFrame(adv_frame)
+        grains_frame.pack(fill=tk.X, pady=2)
+        ctk.CTkLabel(grains_frame, text="Number of Grains:").pack(side=tk.LEFT, padx=5)
+        self.num_grains_var = tk.StringVar(value="100")
+        ctk.CTkEntry(grains_frame, textvariable=self.num_grains_var, width=80).pack(side=tk.LEFT, padx=5)
         temp_frame = ctk.CTkFrame(adv_frame)
         temp_frame.pack(fill=tk.X, pady=2)
         ctk.CTkLabel(temp_frame, text="Temperature (K):").pack(side=tk.LEFT, padx=5)
         self.temperature_var = tk.StringVar(value="300")
         ctk.CTkEntry(temp_frame, textvariable=self.temperature_var, width=80).pack(side=tk.LEFT, padx=5)
+        
         iter_frame = ctk.CTkFrame(adv_frame)
         iter_frame.pack(fill=tk.X, pady=2)
         ctk.CTkLabel(iter_frame, text="Iteration Steps:").pack(side=tk.LEFT, padx=5)
@@ -302,12 +308,13 @@ class MaterialAnalysisGUI:
     def initialize_hot_simulation(self):
         if self.output_files_main_analysis and 'csv' in self.output_files_main_analysis and 's_array' in self.output_files_main_analysis:
             try:
+                num_grains = int(self.num_grains_var.get())
                 df_path = self.output_files_main_analysis['csv']
                 s_array_path = self.output_files_main_analysis['s_array']
                 df = pd.read_csv(df_path)
                 s_array = np.load(s_array_path)
                 params = SimulationParameters(theta_M=float(self.theta_m_var.get()))
-                self.mc_hot_simulation = simulation_hot.HotSimulation(df, s_array, self.mc_canvas, params)
+                self.mc_hot_simulation = simulation_hot.HotSimulation(df, s_array, self.mc_canvas, params, num_grains=num_grains)
                 self.mc_hot_simulation.initialize_grains()
             except FileNotFoundError:
                 self.show_error("Output files from main analysis not found for hot simulation.")

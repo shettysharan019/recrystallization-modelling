@@ -7,7 +7,7 @@ from main import GrainAnalyzer, SimulationParameters
 import os
 
 class HotSimulation:
-    def __init__(self, dataframe: pd.DataFrame, s_array: np.ndarray, canvas, params: SimulationParameters, num_grains: int = 100, pixel_size: int = 10, mobility_m: float = 10.0):
+    def __init__(self, dataframe: pd.DataFrame, s_array: np.ndarray, canvas, params: SimulationParameters, num_grains, pixel_size: int = 10, mobility_m: float = 10.0):
         self.df = dataframe.to_numpy()
         self.s_array = s_array
         self.canvas = canvas

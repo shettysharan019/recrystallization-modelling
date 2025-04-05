@@ -28,8 +28,8 @@ def create_energy_distribution_plot(csv_path: str, output_dir: str) -> str:
 
         plt.figure(figsize=(8, 6)) # Create a new figure for the plot
         plt.hist(energy_values, bins=30, color='skyblue', edgecolor='black')  # Adjust bins as needed
-        plt.xlabel('Misorientation energy (a.u)')
-        plt.ylabel('Frequency')
+        plt.xlabel('Misorientation energy (J/m^2)')
+        plt.ylabel('Frequency (count)')
         plt.title('Energy Distribution for deformed sample')
         plt.grid(False)  # Add grid lines
 
