@@ -16,12 +16,10 @@ import random
 import math
 
 # Import simulation logics
-import simulation_hot
 import simulation_cold
 
 class MaterialAnalysisGUI:
     output_files_main_analysis = None
-    mc_hot_simulation = None
     mc_cold_simulation = None
 
     def __init__(self):
@@ -65,7 +63,7 @@ class MaterialAnalysisGUI:
         ctk.CTkEntry(tol_frame, textvariable=self.tolerance_var, width=80).pack(side=tk.LEFT, padx=5)
         gb_frame = ctk.CTkFrame(basic_frame)
         gb_frame.pack(fill=tk.X, pady=2)
-        ctk.CTkLabel(gb_frame, text="Grain Boundary Energy:").pack(side=tk.LEFT, padx=5)
+        ctk.CTkLabel(gb_frame, text="Grain Boundary Mobility:").pack(side=tk.LEFT, padx=5)
         self.gb_energy_var = tk.StringVar(value="1")
         ctk.CTkEntry(gb_frame, textvariable=self.gb_energy_var, width=80).pack(side=tk.LEFT, padx=5)
         adv_frame = ctk.CTkFrame(frame)
@@ -112,9 +110,7 @@ class MaterialAnalysisGUI:
         self.process_frame = ctk.CTkFrame(frame)
         self.process_frame.pack(pady=5, padx=10, fill=tk.X)
         self.loading_label = ctk.CTkLabel(self.process_frame, text="Processing...", text_color="gray")
-        self.hot_button = ctk.CTkButton(self.process_frame, text="Process Hot-Rolled", command=lambda: self.start_processing("hot"), fg_color="#DB804E")
-        self.hot_button.pack(pady=2, fill=tk.X)
-        self.cold_button = ctk.CTkButton(self.process_frame, text="Process Cold-Rolled", command=lambda: self.start_processing("cold"), fg_color="#5E8CAD")
+        self.cold_button = ctk.CTkButton(self.process_frame, text="Process Cold-Rolled", command=lambda: self.start_processing("cold"))
         self.cold_button.pack(pady=2, fill=tk.X)
         return frame
 
@@ -223,7 +219,6 @@ class MaterialAnalysisGUI:
 
     def finish_processing(self):
         self.processing = False
-        self.hot_button.configure(state="normal")
         self.cold_button.configure(state="normal")
         self.loading_label.pack_forget()
         self.show_info("Processing completed successfully!")
@@ -233,14 +228,28 @@ class MaterialAnalysisGUI:
         if not export_dir:
             return
         try:
+            # Create timestamped subfolder
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            subfolder_name = f"cold_analysis_{timestamp}"
+            subfolder_path = os.path.join(export_dir, subfolder_name)
+            os.makedirs(subfolder_path, exist_ok=True)
+            
             dpi = int(self.dpi_var.get())
             format_ext = self.format_var.get().lower()
+            
+            # Export plots to the subfolder
             for name, canvas in self.current_plots.items():
                 fig = canvas.figure
-                fig.savefig(os.path.join(export_dir, f"{name}.{format_ext}"), dpi=dpi, format=format_ext)
-            self.show_info("Export completed successfully!")
+                fig.savefig(os.path.join(subfolder_path, f"{name}.{format_ext}"), dpi=dpi, format=format_ext)
+            
+            # Export Monte Carlo simulation image if available
+            if self.mc_cold_simulation:
+                self.mc_cold_simulation.save_canvas_image(os.path.join(subfolder_path, f"monte_carlo_simulation.{format_ext}"))
+            
+            self.show_info(f"Export completed successfully to folder: {subfolder_name}")
         except Exception as e:
             self.show_error(f"Export failed: {str(e)}")
+
 
     def show_error(self, message: str):
         messagebox.showerror("Error", message)
@@ -266,7 +275,6 @@ class MaterialAnalysisGUI:
                 contour_levels=int(self.contour_var.get())
             )
             self.processing = True
-            self.hot_button.configure(state="disabled")
             self.cold_button.configure(state="disabled")
             self.loading_label.pack(pady=5)
             self.root.update_idletasks()
@@ -300,10 +308,7 @@ class MaterialAnalysisGUI:
             plot_output_data['Energy Distribution'] = {'data': energy_dist_plot_path}
             self.root.after(0, self.update_gui_plots, plot_output_data)
             self.output_files_main_analysis = output_files
-            if process_type == "hot":
-                self.root.after(0, self.initialize_hot_simulation)
-            elif process_type == "cold":
-                self.root.after(0, self.initialize_cold_simulation)
+            self.root.after(0, self.initialize_cold_simulation)
             self.root.after(0, self.finish_processing)
         except ValueError:
             self.root.after(0, self.show_error, "Invalid bin count. Using default (30).")
@@ -315,24 +320,6 @@ class MaterialAnalysisGUI:
     def update_gui_plots(self, plot_data):
         for plot_title, data in plot_data.items():
             self.update_plots(data, plot_title)
-
-    def initialize_hot_simulation(self):
-        if self.output_files_main_analysis and 'csv' in self.output_files_main_analysis and 's_array' in self.output_files_main_analysis:
-            try:
-                num_grains = int(self.num_grains_var.get())
-                df_path = self.output_files_main_analysis['csv']
-                s_array_path = self.output_files_main_analysis['s_array']
-                df = pd.read_csv(df_path)
-                s_array = np.load(s_array_path)
-                params = SimulationParameters(theta_M=float(self.theta_m_var.get()))
-                self.mc_hot_simulation = simulation_hot.HotSimulation(df, s_array, self.mc_canvas, params, num_grains=num_grains)
-                self.mc_hot_simulation.initialize_grains()
-            except FileNotFoundError:
-                self.show_error("Output files from main analysis not found for hot simulation.")
-            except Exception as e:
-                self.show_error(f"Error initializing hot simulation: {str(e)}")
-        else:
-            self.show_error("Main analysis output files not found. Run 'Process Hot-Rolled' first.")
 
     def initialize_cold_simulation(self):
         if self.output_files_main_analysis and 'csv' in self.output_files_main_analysis and 's_array' in self.output_files_main_analysis:
@@ -363,10 +350,7 @@ class MaterialAnalysisGUI:
         if self.tab_view.get() == "Monte Carlo Simulation":
             self.set_mc_buttons_state(False)
             try:
-                if self.mc_hot_simulation:
-                    self.mc_hot_simulation.monte_carlo_step()
-                elif self.mc_cold_simulation:
-                    self.mc_cold_simulation.monte_carlo_step()
+                self.mc_cold_simulation.monte_carlo_step()
             finally:
                 self.set_mc_buttons_state(True)
                 self.calculate_and_display_grain_size()
@@ -375,10 +359,7 @@ class MaterialAnalysisGUI:
         if self.tab_view.get() == "Monte Carlo Simulation":
             self.set_mc_buttons_state(False)
             try:
-                if self.mc_hot_simulation:
-                    self.mc_hot_simulation.run_all_steps()
-                elif self.mc_cold_simulation:
-                    self.mc_cold_simulation.run_all_steps()
+                self.mc_cold_simulation.run_all_steps()
             finally:
                 self.set_mc_buttons_state(True)
                 self.calculate_and_display_grain_size()
@@ -386,9 +367,7 @@ class MaterialAnalysisGUI:
     def calculate_and_display_grain_size(self):
         """Calculate grain size and update the GUI"""
         try:
-            if self.mc_hot_simulation:
-                simulation = self.mc_hot_simulation
-            elif self.mc_cold_simulation:
+            if self.mc_cold_simulation:
                 simulation = self.mc_cold_simulation
             else:
                 return
@@ -433,16 +412,10 @@ class MaterialAnalysisGUI:
                     value_label.configure(text=updates[label.cget("text")])
 
     def print_euler_angles(self):
-        if self.mc_hot_simulation:
-            self.mc_hot_simulation.print_euler_angles()
-        elif self.mc_cold_simulation:
-            self.mc_cold_simulation.print_euler_angles()
+        self.mc_cold_simulation.print_euler_angles()
 
     def save_canvas_image(self):
-        if self.mc_hot_simulation:
-            self.mc_hot_simulation.save_canvas_image()
-        elif self.mc_cold_simulation:
-            self.mc_cold_simulation.save_canvas_image()
+        self.mc_cold_simulation.save_canvas_image()
 
     def run(self):
         self.root.mainloop()
