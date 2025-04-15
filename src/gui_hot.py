@@ -141,18 +141,41 @@ class MaterialAnalysisGUI:
         mc_frame = self.monte_carlo_tab
         self.mc_canvas = ctk.CTkCanvas(mc_frame, width=400, height=300, bg='white')
         self.mc_canvas.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+        
+        # Add control parameters frame
+        mc_control_frame = ctk.CTkFrame(mc_frame)
+        mc_control_frame.pack(pady=5, padx=10, fill=tk.X)
+        
+        # Total Steps
+        ctk.CTkLabel(mc_control_frame, text="Total Steps:").pack(side=tk.LEFT, padx=5)
+        self.total_steps_var = tk.StringVar(value="500")
+        ctk.CTkEntry(mc_control_frame, textvariable=self.total_steps_var, width=80).pack(side=tk.LEFT, padx=5)
+        
+        # Capture Interval
+        ctk.CTkLabel(mc_control_frame, text="Capture Intv:").pack(side=tk.LEFT, padx=5)
+        self.capture_interval_var = tk.StringVar(value="10")
+        ctk.CTkEntry(mc_control_frame, textvariable=self.capture_interval_var, width=80).pack(side=tk.LEFT, padx=5)
+        
+        # Buttons frame
         mc_button_frame = ctk.CTkFrame(mc_frame)
         mc_button_frame.pack(pady=5, padx=10, fill=tk.X)
         
-        # Store buttons as instance variables
-        self.step_button = ctk.CTkButton(mc_button_frame, text="Monte Carlo Step", command=self.monte_carlo_step)
+        self.step_button = ctk.CTkButton(mc_button_frame, text="Step", command=self.monte_carlo_step)
         self.step_button.pack(side=tk.LEFT, padx=5)
-        self.run_all_button = ctk.CTkButton(mc_button_frame, text="Run All Steps", command=self.run_all_monte_carlo_steps)
+        
+        self.run_all_button = ctk.CTkButton(mc_button_frame, text="Run All", command=self.run_all_monte_carlo_steps)
         self.run_all_button.pack(side=tk.LEFT, padx=5)
-        self.print_button = ctk.CTkButton(mc_button_frame, text="Print Euler Angles", command=self.print_euler_angles)
+        
+        self.print_button = ctk.CTkButton(mc_button_frame, text="Save EA", command=self.print_euler_angles)
         self.print_button.pack(side=tk.LEFT, padx=5)
-        self.save_button = ctk.CTkButton(mc_button_frame, text="Save Image", command=self.save_canvas_image)
+        
+        self.save_button = ctk.CTkButton(mc_button_frame, text="Save Img", command=self.save_canvas_image)
         self.save_button.pack(side=tk.LEFT, padx=5)
+        
+        # Add quality parameter
+        ctk.CTkLabel(mc_control_frame, text="JPEG Quality:").pack(side=tk.LEFT, padx=5)
+        self.quality_var = tk.StringVar(value="95")
+        ctk.CTkEntry(mc_control_frame, textvariable=self.quality_var, width=60).pack(side=tk.LEFT, padx=5)
 
     def create_analysis_section(self) -> ctk.CTkFrame:
         frame = ctk.CTkFrame(self.main_container)
@@ -226,28 +249,14 @@ class MaterialAnalysisGUI:
         if not export_dir:
             return
         try:
-            # Create timestamped subfolder
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            subfolder_name = f"hot_analysis_{timestamp}"
-            subfolder_path = os.path.join(export_dir, subfolder_name)
-            os.makedirs(subfolder_path, exist_ok=True)
-            
             dpi = int(self.dpi_var.get())
             format_ext = self.format_var.get().lower()
-            
-            # Export plots to the subfolder
             for name, canvas in self.current_plots.items():
                 fig = canvas.figure
-                fig.savefig(os.path.join(subfolder_path, f"{name}.{format_ext}"), dpi=dpi, format=format_ext)
-            
-            # Export Monte Carlo simulation image if available
-            if self.mc_hot_simulation:
-                self.mc_hot_simulation.save_canvas_image(os.path.join(subfolder_path, f"monte_carlo_simulation.{format_ext}"))
-            
-            self.show_info(f"Export completed successfully to folder: {subfolder_name}")
+                fig.savefig(os.path.join(export_dir, f"{name}.{format_ext}"), dpi=dpi, format=format_ext)
+            self.show_info("Export completed successfully!")
         except Exception as e:
             self.show_error(f"Export failed: {str(e)}")
-
 
     def show_error(self, message: str):
         messagebox.showerror("Error", message)
@@ -358,11 +367,18 @@ class MaterialAnalysisGUI:
         if self.tab_view.get() == "Monte Carlo Simulation":
             self.set_mc_buttons_state(False)
             try:
-                self.mc_hot_simulation.run_all_steps()
+                total_steps = int(self.total_steps_var.get())
+                capture_interval = int(self.capture_interval_var.get())
+                self.mc_hot_simulation.run_all_steps(
+                    total_steps=total_steps,
+                    capture_interval=capture_interval
+                )
+            except ValueError as ve:
+                self.show_error(f"Invalid step values: {str(ve)}")
             finally:
                 self.set_mc_buttons_state(True)
                 self.calculate_and_display_grain_size()
-
+            
     def calculate_and_display_grain_size(self):
         """Calculate grain size and update the GUI"""
         try:

@@ -5,6 +5,8 @@ import math
 from PIL import Image, ImageTk, EpsImagePlugin
 from main import GrainAnalyzer, SimulationParameters
 import os
+from datetime import datetime
+import aspose.imaging as ai
 
 class HotSimulation:
     def __init__(self, dataframe: pd.DataFrame, s_array: np.ndarray, canvas, params: SimulationParameters, num_grains, pixel_size: int = 10, mobility_m: float = 10.0):
@@ -55,12 +57,13 @@ class HotSimulation:
         return SE_f - SE_i
 
     def probability(self, del_E, misorientation):
-        theta_m_rad = np.radians(self.params.theta_M)
+        MIN_PROB = 0.01  # 1% minimum chance
         stored_energy_val = self.grain_analyzer.stored_energy(misorientation)
         if del_E <= 0:
-            return (self.mobility(misorientation) * stored_energy_val * 2) / (self.mobility_m * 10.0)
+            calculated_prob = (self.mobility(misorientation) * stored_energy_val * 2) / (self.mobility_m * 10.0)
         else:
-            return (self.mobility(misorientation) * stored_energy_val * 2) * (np.exp(-1 * del_E)) / (self.mobility_m * 10.0)
+            calculated_prob = (self.mobility(misorientation) * stored_energy_val * 2) * (np.exp(-1 * del_E)) / (self.mobility_m * 10.0)
+        return max(calculated_prob, MIN_PROB)
 
     def state_change(self, current_grain, coords_px):
         x_coord = coords_px[0]
@@ -97,33 +100,52 @@ class HotSimulation:
                     return True
         return False
 
-    def print_euler_angles(self):
+    def print_euler_angles(self, filename=None):
+        """Save Euler angles with matching timestamp"""
         try:
-            with open(f"sim_output_n={self.num_grains}_hot.txt", "w") as f:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
+            if filename is None:
+                filename = f"euler_{timestamp}.txt"
+                
+            with open(filename, "w") as f:
                 f.write("phi1,phi,phi2,X,Y,IQ\n")
                 for x in range(self.r):
                     for y in range(self.c):
-                        f.write(f"{self.EA[x, y, 0]},{self.EA[x, y, 1]},{self.EA[x, y, 2]},{x * 1},{y * 1},60\n")
-            print("Euler angles printed to sim_output_n_hot file.")
+                        f.write(f"{self.EA[x,y,0]},{self.EA[x,y,1]},{self.EA[x,y,2]},{x},{y},60\n")
         except Exception as e:
-            print(f"Error printing Euler angles: {e}")
+            print(f"Error saving Euler angles: {str(e)}")
 
     def generate_random_color(self):
         return f'#{random.randint(0, 0xFFFFFF):06x}'
 
-    def save_canvas_image(self, filename="sim_output_hot.png"):
+    def save_canvas_image(self, filename=None):
+        """Save canvas as JPG using Aspose.Imaging"""
         try:
-            self.canvas.postscript(file="output_image.eps", colormode='color')
-            EpsImagePlugin.gs_windows_binary = r'"C:/Program Files/gs/gs10.04.0/bin/gswin64.exe"'  # Adjust path if needed
-            img = Image.open("output_image.eps")
-            img.save(filename, format="png")
-            img.close()
-            os.remove("output_image.eps")
-            print(f"Monte Carlo Image saved to {filename}")
-        except FileNotFoundError:
-            print("Ghostscript not found. Please install it and ensure the path in code is correct.")
+            # Generate timestamp for filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
+            
+            # Default filename if not provided
+            if filename is None:
+                filename = f"sim_output_{timestamp}.jpg"
+                
+            # Create EPS version first
+            eps_path = f"temp_{timestamp}.eps"
+            self.canvas.postscript(file=eps_path, colormode='color')
+            
+            # Convert EPS to JPG using Aspose
+            with ai.Image.load(eps_path) as image:
+                options = ai.imageoptions.JpegOptions()
+                options.quality = 95  # Set JPEG quality
+                image.save(filename, options)
+                
+            # Cleanup temporary EPS
+            os.remove(eps_path)
+            
         except Exception as e:
-            print(f"Error saving Monte Carlo image: {str(e)}")
+            print(f"Error saving image: {str(e)}")
+        finally:
+            if os.path.exists(eps_path):
+                os.remove(eps_path)
 
     def update_display(self):
         self.canvas.delete("all")
@@ -169,9 +191,32 @@ class HotSimulation:
             m += 1
             self.update_display()
 
-    def run_all_steps(self, num_steps=200):
-        for _ in range(num_steps):
-            self.monte_carlo_step(num_steps=len(self.grains))
+    def is_lattice_filled(self):
+        return not np.any(self.lattice_status == 0)
+
+    def run_all_steps(self, total_steps=500, capture_interval=10):
+        root_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.capture_dir = None
+        capture_active = False
+        steps_since_capture = 0
+
+        for step in range(1, total_steps + 1):
+            self.monte_carlo_step()
+            
+            if not capture_active and self.is_lattice_filled():
+                self.capture_dir = os.path.join("MC_Captures", f"capture_{root_timestamp}")
+                os.makedirs(self.capture_dir, exist_ok=True)
+                capture_active = True
+                steps_since_capture = 0
+                
+            if capture_active:
+                steps_since_capture += 1
+                if steps_since_capture % capture_interval == 0:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")
+                    self.save_canvas_image(os.path.join(self.capture_dir, f"sim_{timestamp}.jpg"))
+                    self.print_euler_angles(os.path.join(self.capture_dir, f"euler_{timestamp}.txt"))
+
+            self.update_display()
 
 if __name__ == '__main__':
     # Example usage (for testing)
