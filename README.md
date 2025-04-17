@@ -1,7 +1,7 @@
 # Material Analysis Tool
 
 ## Overview
-A sophisticated GUI application for materials scientists and engineers to analyze crystallographic properties, grain structures, and simulate microstructural evolution through hot and cold rolling processes. This tool provides comprehensive visualization and analysis capabilities for understanding material behavior at the microstructural level.
+An intuitive GUI application for materials scientists and engineers to analyze crystallographic properties, grain structures, and simulate microstructural evolution through hot and cold rolling processes. This tool provides comprehensive visualization and analysis capabilities for understanding material behavior at the microstructural level.
 
 ## Key Features
 
@@ -27,8 +27,8 @@ A sophisticated GUI application for materials scientists and engineers to analyz
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/material-analysis-tool.git
-   cd material-analysis-tool
+   git clone https://github.com/shettysharan019/recrystallization-modelling.git
+   cd recrystallization-modelling
    ```
 
 2. Install dependencies:
@@ -39,8 +39,15 @@ A sophisticated GUI application for materials scientists and engineers to analyz
 ## Usage
 
 ### Starting the Application
+
+for hot rolled samples:
 ```
-python src/gui.py
+python src/gui_hot.py 
+```
+OR
+for cold rolled samples:
+```
+python src/gui_cold.py
 ```
 
 ### Workflow
